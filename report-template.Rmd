@@ -1,0 +1,209 @@
+---
+title: "Reproducible Report Template"
+output: html_notebook
+--- 
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(odbc)
+library(lubridate)
+```
+
+## Background and Objectives
+
+This section should address the following questions:
+
+* What is the question to be addressed by the project?
+* How could addressing this question change patient management or further generalizable knowledge?
+* What data resources could be used?
+* What are the first 1-2 key graphs or statistics that should be obtained?
+
+
+## Data Acquisition
+
+* For database sources, include the following:
+    * Database server address
+    * Database table name
+    * No login credentials!
+* For data file sources, include the following:
+    * Origin, with references
+    * File name and format
+* For all data sources, include the following:
+    * General properties of the data set
+    * Code Book
+
+### Sample Code
+
+#### Load CSV file
+
+```{r}
+my_data <- read_csv("my_data.csv")
+```
+
+#### Load Excel file
+
+```{r}
+library(readxl)
+my_data <- read_excel("my_data.xlsx")
+```
+
+#### Connect to the MGH Lab Utilization Datamart
+
+```{r connect-datamart}
+username <- function() {
+    .rs.api.showPrompt(title = "Username", 
+                       message = "Please enter your Partners User Name")
+}
+
+password <- function() {
+    .rs.api.askForPassword(prompt = "Please enter your Partners Password")
+}
+
+con <- dbConnect(odbc(),
+                 dsn = "PHSSQL2057",
+                 uid = str_c("PARTNERS\\", username()),
+                 pwd = password())
+  
+labresults_tbl <- tbl(con, "MGHLABUTIL_LabResults")
+```
+
+#### List all test order names, ordered by frequency
+
+```{r}
+tests <- labresults_tbl %>%
+    select(TstOrderName, CollectDateTime) %>%
+    filter(year(CollectDateTime) == "2017") %>%
+    group_by(TstOrderName) %>%
+    summarize(count = n()) %>%
+    arrange(desc(count)) %>%
+    collect()
+```
+
+#### Database Query
+
+```{r query}
+esr <- labresults_tbl %>%
+  select(column1,
+         column2,
+         ...) %>%
+  filter(condition1,
+         condition2,
+         ...,
+         year(CollectDateTime) == "2017") %>%
+  arrange(CollectDateTime) %>%
+  collect()
+```
+
+#### Data Dump
+
+```{r save-rds}
+esr %>% 
+    write_rds(str_c("my_data_", today(), ".rds"))
+```
+
+#### Disconnect
+
+```{r}
+dbDisconnect(con)
+```
+
+
+## Data Exploration and Clean-Up
+
+* Convert messy data to tidy
+    * Each variable in its own column
+    * Each case in its own row
+    * Each value in its own cell
+* Check for missing values
+* Then, go column by column and do the following:
+    * Verify (and if necessary, convert) data type
+        * Numeric variables should be integer or numeric
+        * Date-time variables should be Date or POSIXct
+        * Categorial variables should be factor
+        * All others should be character
+    * Visualize distribution
+        * Numeric variables: histogram
+        * Categorical variables: bar graph
+        * Character variables: inspect a small sample
+    * Comment on whether the data is as expected
+        * Range and shape of distribution
+        * Number and breakdown of categories
+        * Properties of character variables
+    * Explain and/or fix discrepancies
+
+### Sample Code
+
+#### Missing values
+
+```{r}
+esr %>%
+    map_df(function(x) sum(is.na(x))) %>%
+    gather(column, NAs)
+```
+
+#### Numeric variables
+
+`variable_1` is an **integer** column, which is appropriate.
+
+```{r}
+ggplot(data = my_data) + 
+    geom_histogram(mapping = aes(x = variable_1),
+                   binwidth = 1)
+```
+
+#### Factor variables
+
+`variable_2` is a **factor** column, which is appropriate.
+
+```{r}
+ggplot(data = my_data) + 
+    geom_bar(mapping = aes(x = variable_2))
+```
+
+#### Character variables
+
+`variable_3` is a **character** column, which is approprite.
+
+```{r}
+set.seed(1)
+my_data %>%
+    sample_n(10) %>%
+    pull(variable_3)
+```
+
+#### Convert from character to factor
+
+`variable_4` is a **character** column, but since it represents a categorial variable, convert it to a **factor**.
+
+```{r}
+my_data <- my_data %>%
+    mutate(variable_4 = as_factor(variable_4))
+```
+
+#### Convert from character to integer
+
+`variable_5` is a **character** column, but since it represents a numeric variable, convert it to **integer**.
+
+Before doing so, examine any rows that do *not* contain an integer value:
+
+```{r}
+my_data %>%
+    filter(is.na(as.integer(variable_5))) %>%
+    group_by(variable_5) %>%
+    summarize(n = n()) %>% 
+    arrange(desc(n))
+```
+
+Now convert to integer and drop all rows in which `variable_5` had a non-numeric entry.
+
+```{r}
+my_data <- my_data %>%
+    mutate(variable_5 = as.integer(variable_5)) %>%
+    drop_na(variable_5)
+```
+
+## Visualization and Modeling
+
+
+## References
+

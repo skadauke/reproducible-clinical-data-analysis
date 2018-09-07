@@ -1,0 +1,185 @@
+---
+title: "Exploring Data"
+output: html_notebook
+---
+
+## Your Turn #2 - Visualizing Data
+
+### Import ESR Data
+
+If you haven't done so, download `esr_data.csv` from your e-mail and place it in the same folder as this document. Then run the code.
+
+```{r, warning = FALSE}
+library(tidyverse)
+esr <- read_csv("esr_data.csv", col_types = "iTcccicc")
+```
+
+### Practice ggplot-ting
+
+Recall the histogram of ESR values we examined at the beginning of the session. You will now create it yourself. You will need to:
+
+1. Pick a data set: esr
+2. Choose a geom function: geom_histogram()
+3. Map aesthetic properties of the graph to variables of the data frame (in this case, the "Result" variable should be on the x axis; on histograms the y axis represents the number of values that fall within an interval): x = Result
+
+Fill in the blanks and run the code to create the plot.
+
+(Hint: if you get stuck, take a look at the slide titled "ggplot()"!)
+
+```{r, message = FALSE}
+ggplot(data = ______) +
+    ______________(mapping = aes(__________))
+```
+
+Congratulations, you created your first ggplot!
+
+Now make a histogram of the "CollAge" variable from "esr".
+
+```{r, message = FALSE}
+ggplot(data = ______) +
+    ______________(mapping = aes(__________))
+```
+
+Make a scatter plot with "CollAge" on the x axis and "Result" on the y axis. 
+
+Hint: Look at the Cheat Sheet to figure out which geom_ function to use to make a scatter plot.
+
+```{r, message = FALSE, warning = FALSE}
+ggplot(data = ______) +
+    __________(mapping = aes(x = _______, y = ______))
+```
+
+Make a scatter plot with "CollectDateTime" on the x axis and "Result" on the y axis.
+
+```{r}
+
+```
+
+
+Stop here. 
+
+
+******************
+
+## Your Turn #3: Isolating Data
+
+### select()
+
+The following code chunk selects the the "CollAge" and "Result" columns from the "esr" data frame. Modify the code to only select the "PtSex" column.
+
+```{r}
+select(esr, CollAge, Result)
+```
+
+### filter()
+
+Show all rows where the variable "CollAge" is greater than or equal to 100
+
+```{r}
+filter(esr, __________)
+```
+
+Show all rows that have a missing value for "Result".
+
+```{r}
+______(______, __________)
+```
+
+#### Combined logical tests
+
+There are three operators which allow you to combine logical tests.
+
+&  "and"
+|  "or"
+!  "not"
+
+For example, the following code uses the "and" (&) operator to select rows in which "PtSex" is neither "F" nor "M".
+
+```{r}
+filter(esr, PtSex != "F" & PtSex != "M")
+```
+
+Try the following:
+
+* Show all rows where "PtSex" is "M" *and* "Result" is greater than 13.
+
+```{r}
+filter(esr, _________________________)
+```
+
+* Re-write the code so it uses the pipe (%>%) operator to plug "esr" into the filter() function. (Hint: look at the slide titled "The Pipe Operator %>%")
+
+```{r}
+
+```
+
+### arrange()
+
+Alter the code below to sort by "CollectDateTime".
+
+```{r}
+arrange(esr, _______________)
+```
+
+Now change the order so that oldest samples are shown first.
+
+```{r}
+arrange(______, _______________)
+```
+
+Re-write the above code so it uses the pipe operator.
+
+```{r}
+
+```
+
+### Pipelines
+
+Now let's try to construct a pipeline that give us an ordered list of results from women with a normal ESR value, by age.
+
+Write a pipeline that
+1. Starts with the data frame "esr", then
+2. Selects the CollAge, PtSex, and Result columns, then
+3. Filters so only rows in which PtSex is "F" remain, then
+4. Filters so only rows in which CollAge is smaller than or equal to 20 remain, then
+5. Arranges the results first by age, then (as a tie-breaker) by Result, in descending order.
+
+```{r}
+
+```
+
+Stop here.
+
+
+******************
+
+## Your Turn #4: Grouping and Summarizing Data 
+
+In this exercise, we will find the number of distinct patients in the the "esr" data set and will find the average and standard deviation of the age of patients, broken down by patient sex.
+
+One problem is that many patients in "esr" have multiple results. We don't want the results to be skewed towards patients who have multiple results logged. To solve this problem, we will take advantage of the dplyr verb "distinct", which removes duplicate values in a data frame.
+
+Can you figure out how to use distinct() to answer the following: How many distinct patients are represented in "esr"?
+
+```{r}
+
+```
+
+Next we will use the set of distinct patients and pipe them into the group_by() and summarize() functions to compute three summary statistics about "esr", separately for men and women (i.e. grouped by "PtSex"):
+
+1. The number of distinct patients.
+2. The average (mean) age of patients.
+3. The standard deviation of the age of patients.
+
+Note: we need to pass the option ".keep_all = TRUE" to distinct() because otherwise it will drop all the columns except for the ones for which we select unique values.
+
+```{r}
+esr %>%
+    distinct(_________, .keep_all = TRUE) %>%
+    group_by(_________) %>%
+    summarize(MeanAge = ___________,
+              SDAge   = ___________,
+              nPts    = ___________)
+```
+
+Great! Do the results surprise you? Why or why not? Why do you think there is a row with PtSex "U"?

@@ -1,0 +1,47 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an *R Notebook*. R Notebooks are written in a language called *R Markdown*. An R Notebook is like an electronic lab notebook, but for data analysis. You can use R Notebooks to take notes, write code, and you can run that code and see the results in the same document. You can also turn the R Markdown document into an attractively formatted *HTML* page. More on that later.
+
+To take notes, simply edit the text in this document. For example, edit the following line to replace *XXX* with your name:
+
+
+My name is *Stephan*, and I'm editing an R Notebook!
+
+
+In an R Markdown document, code goes into *code chunks*. Each code chunk starts with three back-ticks and the letter "r" in curly brackets. (On your keyboard, the back-tick is usually located directly below your Escape key). Each code chunk ends with a line that has three backticks and nothing else. The RStudio editor makes the background color of code chunks gray. This way it's easy to see where all the code chunks are in your R Notebook. 
+
+You can *run the code* in a code chunk by clicking the *green triangle* in the upper right corner of the code chunk. The results will appear beneath the chunk. Try it!
+
+```{r}
+plot(cars)
+```
+
+Good job!
+
+# Adding chunks
+
+Try making a code chunk below and run it. The code chunk should run only the following command: 
+
+```{r}
+plot(pressure)
+```
+
+
+# HTML version
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it. This makes a nice, polished report of your work that you can share with others.
+
+Click the *Preview* button at the top of this document. Take a look at the rendered HTML page on the right. Doesn't it look nice?
+
+# Packages
+
+You can immediately run any function from base R within a notebook, But if you'd like to run a function that comes in an R package, you will need to first load the package in the notebook.
+
+Can you figure out how to load the tidyverse package? (Hint: check the slide "A Word About Packages"!)
+
+```{r}
+library(tidyverse)
+```

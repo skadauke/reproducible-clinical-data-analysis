@@ -1,0 +1,31 @@
+---
+title: "R Notebook Practice"
+output: html_notebook
+---
+
+## This is a level 2 header
+
+### And this is a level 3 header
+
+It is easy to add plain text in R Markdown. It's also easy to add styling such as:
+
+* **bold face**,
+* *italic*, or
+* ~~strikethrough~~.
+
+To start a new paragraph, leave an empty line between paragraphs of text. 
+
+Here's a link to [Google](https://www.google.com). Click it to make sure it works!
+
+```{r}
+library(tidyverse)
+  
+ggplot(data = diamonds) +
+  geom_point(mapping = aes(x = carat, 
+                           y = price, 
+                           color = cut),
+             size = 0.1) +
+  facet_grid(cut ~ .)
+```
+
+Hint: if you don't see the resulting graph in the Preview, run the code chunk first!

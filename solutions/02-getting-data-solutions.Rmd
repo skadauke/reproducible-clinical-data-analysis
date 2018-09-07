@@ -1,0 +1,212 @@
+---
+title: "Getting Data"
+output: html_notebook
+---
+
+## Your Turn #1: Importing a CSV file
+
+If you have not yet done so, save the file "esr_data.csv" which you received by e-mail to the same place where this file is stored (e.g. on the Desktop).
+
+To the following code chunk, add a line of code that accomplishes the following:
+
+1. Loads the CSV file "esr_data.csv"
+2. Stores the resulting data frame in an object named "esr" (without the quotes)
+
+(Hint: this is very similar to what's on the slide titled "read_csv()")
+
+```{r}
+library("tidyverse")
+
+esr <- read_csv("esr_data.csv")
+```
+
+Remember that in order to run a code chunk, you need to click on the little green triangle at the upper right corner of the code chunk.
+
+### Viewing a data frame in RStudio
+
+One thing that Excel does well is to provide an interactive visual representation of the data, allowing you to sort and filter it. RStudio actually does this well, also.
+
+Look on the right at the *Environment* pane (you might have to click on the "Environment" tab) and find the entry *esr*. This is the data frame you just created. 
+
+On the far right in this row, you will spot a symbol that looks like a small table. Click on it to make the Table Viewer appear.
+
+*Pair up* with your group mates and answer the following questions:
+
+1. How many rows are in the data frame? How many columns?
+
+    46575 rows, 8 columns
+
+2. What do you think the column titled *CollAge* means?
+
+    Patient age at sample collection
+
+3. Go ahead and try to edit one of the values in this viewer. You will find that you can't. It would have been easy for the RStudio programmers to allow editing of specific values, but they decided not to add that feature. Why do you think this was designed that way?
+
+    That would make it not reproducible.
+
+4. Can you think if an easy way to confirm that all samples were collected in between *1-1-2017* and *12-31-2017*?
+
+    Sort by CollDate -> first entry are 1-1-2017 and last entry is 12-31-2017, all others must be in between.
+
+5. Can you figure out, without writing any R code, how many of the rows come from *male* patients?
+
+    Filter -> PtSex = "M". 19857 rows.
+
+
+*Stop here*. We'll continue later in the session.
+
+*****************
+
+
+
+## You Turn #4: Connecting to the Datamart (macOS only currently)
+
+The goal of this exercise is to set your computer up for connecting to the MGH Utilization Management Datamart.
+
+At this time, you can connect your *personal macOS laptop* or a *Partners workstation* to the Datamart. I haven't (yet) been able to get this to work on non-Partners Windows PCs. Please follow the applicable section below.
+
+### macOS
+
+You can connect to the Datamart from a personal Macbook in two ways: connected to the Partners Wi-Fi or using a VPN (virtual private network). I'm assuming here that you're connected to Partners Wi-Fi.
+
+Make sure your computer is connected to *phswifi3*. You will not be able to connect to the Datamart from the guest Wi-Fi.
+
+Setting up database access requires a few steps, which I've tried to streamline here as much as possible, while not trying to shelter you from key technical aspects you should be aware of.
+
+The first step is to install *homebrew*. Homebrew is a package management system for macOS. Think of it as an alternative App Store that provides a lot of open-source software that works from the command line.
+
+To install homebrew, you need to enter some code in the *Terminal*. The Terminal is like the Console in that you enter one command at a time and it gets executed right away. It's different from the Console in that it accepts *system commands*, not R commands. RStudio has a Terminal built in - click on the *Terminal* tab in the lower left ("Console") pane. You should be greeted by a *prompt* that's something like:
+
+  mycomputer:~ myname$ 
+
+This prompt means that the Terminal is ready to accept a command. Copy the following command and paste it in the Terminal, then press enter. Follow the prompts and enter your system password when asked.
+
+
+  /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+
+
+The next step will be to install *FreeTDS*, a driver to connect to Microsoft SQL servers. Copy the following code, paste it in the Terminal, and hit enter.
+
+
+  brew install freetds --with-unixodbc
+
+
+We also need to create two configuration files to tell FreeTDS (and hence, R/RStudio) how to access the Datamart. These files, named *.odbcinst.ini* and *.odbc.ini*, need to be stored in your home directory. 
+
+Run the following code chunk (by clicking the green triangle on the top right) to create these files automatically.
+
+```{r}
+writeLines(
+    c(
+        "[FreeTDS]",
+        "Description = TD Driver (MSSQL)",
+        "Driver = /usr/local/lib/libtdsodbc.so",
+        "Setup = /usr/local/lib/libtdsodbc.so",
+        "FileUsage = 1"),
+    con = "~/.odbcinst.ini"
+)
+
+writeLines(
+    c(
+        "[PHSSQL2057]",
+        "Driver = FreeTDS",
+        "Server = PHSSQL2057.partners.org",
+        "Port = 1433",
+        "Database = MGHLABUTIL"),
+    con = "~/.odbc.ini"
+)
+```
+
+This concludes the macOS-specific configuration. Skip ahead to the section *Finish installation*.
+
+
+### Partners Workstation
+
+Click on the *Windows* button and type "odbc" in the search field. The entry *Data Sources (ODBC)* should appear. Click on it to run the program.
+
+Click *Add...* and select *SQL Server* all the way on the bottom of the list. Click *Finish*.
+
+In the next window, enter "PHSSQL2057" in both the *Name:* and the *Server:* fields. Click *Next*, *Next*, *Next*, and *Finish*. Then click on *Test Data Source...*. If everything worked, you should see the message "TESTS COMPLETED SUCCESSFULLY!" Click *OK* on each window.
+
+This concludes the Windows-specific configuration. Continue with the section *Finish installation*.
+
+
+### Finish installation
+
+Install the *odbc* package to enable R and RStudio to connect to databases via *FreeTDS*. Run the following code chunk:
+
+```{r}
+install.packages("odbc")
+```
+
+That's it! Your computer should now be set up for connecting to the Datamart. So let's try it out!
+
+
+### Connect to the Datamart
+
+The following code will ask you for your Partners username and password and establish a connection to the Datamart. If successful, the *Connections* tab will appear in the upper right ("Environment") pane.
+
+```{r}
+library("odbc")
+library("tidyverse")  # for str_c
+
+username <- function() {
+    .rs.api.showPrompt(title = "Username", 
+                       message = "Please enter your Partners User Name")
+}
+
+password <- function() {
+    .rs.api.askForPassword(prompt = "Please enter your Partners Password")
+}
+
+con <- dbConnect(odbc(),
+                 dsn = "PHSSQL2057",
+                 uid = str_c("PARTNERS\\", username()),
+                 pwd = password())
+```
+
+
+### Browsing a database
+
+Find the database with the name *MGHLABUTIL* in the *Connections* pane and click on the blue cirle with the white triangle inside it. This opens up another level in this view, one of which is *dbo* which stands for *database objects*. These are the database *tables* that live inside the MGHLABUTIL database.
+
+There are quite a few tables in the MGHLABUTIL database, but the one we use most often is named *MGHLABUTIL_LabResults*. This database table contains one row for each lab result logged in MGH's Lab Information System (SunQuest) since 2013.
+
+Click on the blue circle with the white triangle next to *MGHLABUTIL_LabResults*. This reveals all the columns (or variables) in the table. There are 71 of them!
+
+On the far right in this row, you will spot a symbol that looks like a small table, just like the one you saw ealier next to *esr*. Click on it to preview the database table.
+
+*Pair up* with your group mates and answer the following questions:
+
+1. How many rows did RStudio retrieve? Why do you think RStudio only pulled a small subset of all the rows in MGHLABUTIL_LabResults?
+
+1000 rows. Pulling all rows is not necessary for previewing, would slow down both the database server and RStudio, and would waste bandwidth.
+
+2. Suppose you're interested in creating a graph that shows the results of all ESR values from 2017 versus patient age, patient sex. Without looking at the specific column names or data in MGHLABUTIL_Results, what information do you think you will need?
+
+    - patient age
+    - patient sex
+    - date of collection
+    - lab result
+    - name of test
+
+3. Try to identify the specific columns in MGHLABUTIL_LabResults that contain this information from question 2.
+
+    - CollAge
+    - PtSex
+    - CollectDateTime or CollDate
+    - Result
+    - TstOrderName
+
+4. Even though the patient name and MRN are not going to be necessary for creating the graph, why might it be a good idea to pull this information as well?
+
+    Patient name and MRN can be useful to have to validate data. For example, there might be data for "test" patients in the system which you may want to filter out.
+
+
+### Disconnect
+
+Once you are done browsing, disconnect from the Datamart by running the following code chunk:
+
+```{r}
+dbDisconnect(con)
+```
