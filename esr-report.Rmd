@@ -4,27 +4,22 @@ output: html_notebook
 ---
 
 ```{r setup, include=FALSE}
-# Load required packages
 library(tidyverse)
-library(odbc)
 library(lubridate)
 ```
 
 ## Background and Objectives
 
-One of our clinicians let us know that a lot of his patients, especially healthy elderly ones, receive ESR results flagged as abnormally high. He wonders whether our reference ranges are too stringent for this population. 
+The question to be addressed is whether the reference ranges for ESR values obtained at our hospital are appropriate. There is great variation in ESR reference ranges in use by different clinical labs.
 
-The ESR is the measurement of the rate at which red blood cells (RBCs) settle in anticoagulated blood. RBCs settle faster when pro-sedimentation factors, such as fibrinogen, cause RBCs to stick together to form rouleaux. Pro-sedimentation factors tend to be upregulated in inflammatory states. Thus, the ESR is a nonspecific marker for inflammation. 
+The goal of this analysis is to review our hospital's ESR values to find out whether there are discernable normal and abnormal populations. The objective is to visualize a sample of ESR values, broken down by age and sex, and highlight different options for cutoffs to better understand whether adjusting our reference range might be beneficial.
 
-It is known that a normal ESR value varies with age (higher in younger individuals) and gender (higher in females). However, there are multiple reference ranges in use by different clinical laboratories.
-
-It is questionable whether inspection of a mixed population of ESR values (i.e., from healthy and sick individuals) allows classification of normal vs abnormal values. This may be the case if there is clear separation of normal and abnormal values. In any case, it may be useful to visualize a sample of ESR values and highlight different options for cutoffs to better understand whether changing our reference range might be beneficial.
-
-#### MGH
+#### Our hospital
 
 |Age|Male|Female|
 |---|----|------|
-|all|<=13 mm/h|<=20 mm/h|
+|<=50|<=15 mm/h|<=25 mm/h|
+|>50|<=15 mm/h|<=30 mm/h|
 
 #### ARUP Laboratories
 
@@ -57,65 +52,37 @@ It is questionable whether inspection of a mixed population of ESR values (i.e.,
 
 ## Data Acquisition
 
-Connect to the MGH Pathology Datamart (`phssql2057.partners.org`), and select the table `MGHLABUTIL_LabResults`.
+Data source: CERNER query performed by Dan Herman on 08/14/2018, then de-identified by the following actions:
 
-```{r connect-datamart}
-username <- function() {
-    .rs.api.showPrompt(title = "Username", 
-                       message = "Please enter your Partners User Name")
-}
+1. Replacing patient names and MRNs with synthetic data generated using [Synthea](https://github.com/synthetichealth/synthea)
+2. Scrmabling order ID and accession ID
+3. Randomly shifting all time stamps by +/- 3 weeks
 
-password <- function() {
-    .rs.api.askForPassword(prompt = "Please enter your Partners Password")
-}
-
-con <- dbConnect(odbc(),
-                 dsn = "PHSSQL2057",
-                 uid = str_c("PARTNERS\\", username()),
-                 pwd = password())
-  
-labresults_tbl <- tbl(con, "MGHLABUTIL_LabResults")
+```{r, message=FALSE}
+esr <- read_csv("esr.csv")
 ```
 
-Retrieve all ESR values from 2017, along with the following columns:
+We will focus on ESR values from 2017, along with the following columns:
 
-1. **CollAge**. Patient age at time of collection.
-2. **CollectDateTime**. Date and time of collection.
-3. **PtName**. Patient name.
-4. **PtNumber**. Patient MRN (MGH).
-5. **PtSex**. Patient sex.
-6. **Result**. ESR result value.
-7. **TstOrderName**. Test order name.
-8. **UserQAFlags**. This column marks "high" and "low" results.
-
-```{r query}
-esr <- labresults_tbl %>%
-  select(CollAge, 
-         CollectDateTime, 
-         PtName, 
-         PtNumber, 
-         PtSex, 
-         Result, 
-         TstOrderName, 
-         UserQAFlags) %>%
-  filter(TstOrderName == "ESR",
-         year(CollectDateTime) == "2017") %>%
-  arrange(CollectDateTime) %>%
-  collect()
-```
-
-The ESR data was stored in the data frame `esr`. Save the unaltered data frame on disk in case the database server goes down.
-
-```{r save-rds}
-esr %>% 
-    write_rds(str_c("esr_data_", today(), ".rds"))
-```
-
-Disconnect from the database and clean up.
+1. **MRN**. Patient MRN (**synthetic**).
+2. **PT_NAME**. Patient name (**synthetic**).
+3. **AGE**. Patient age at time of collection.
+4. **SEX**. Patient sex.
+6. **RESULT**. Result value. Renamed from **ASCII_TEXT** for clarity.
+7. **DRAWN_DT_TM**. Date and time of collection (**shifted randomly**).
 
 ```{r}
-dbDisconnect(con)
+esr <- esr %>%
+  select(MRN,
+         PT_NAME,
+         AGE,
+         SEX,
+         DRAWN_DT_TM,
+         RESULT = ASCII_TEXT) %>%
+  filter(year(DRAWN_DT_TM) == 2017) %>%
+  arrange(DRAWN_DT_TM)
 ```
+
 
 ## Data Exploration and Cleaning
 
@@ -125,179 +92,187 @@ Count the number of `NA`s (missing values) in each column of `esr`.
 
 ```{r}
 esr %>%
-    map_df(function(x) sum(is.na(x))) %>%
-    gather(column, NAs)
+  map_df(function(x) sum(is.na(x))) %>%
+  gather(column, NAs)
 ```
 
-None of the columns of `esr` contain any missing values.
+Only the `RESULT` column has missing values. We will explore this later.
 
-### CollAge
 
-`CollAge`, the age at collection, is an **integer** column, which is appropriate.
+### MRN
+
+`MRN`, the HUP MRNs of the patients, is a **character** column, which is appropriate. 
+
+*Note*: if `MRN` were converted to integer, MRNs with leading zeroes would be altered. 
+
+```{r}
+set.seed(1)
+esr %>%
+  sample_n(10) %>%
+  pull(MRN)
+```
+
+A random sample of 10 MRNs shows that all are 9 digits long. This is what's expected for our patients.
+
+
+### PT_NAME
+
+`PT_NAME` is a **character** column, which is appropriate. 
+
+```{r}
+set.seed(1)
+esr %>%
+  sample_n(10) %>%
+  pull(PT_NAME)
+```
+
+A random sample of 10 names is as expected. (Again, these are all fake).
+
+
+### AGE
+
+`AGE`, the age at collection, is an **integer** column, which is appropriate.
 
 ```{r}
 ggplot(data = esr) + 
-    geom_histogram(mapping = aes(x = CollAge),
-                   binwidth = 1)
+  geom_histogram(mapping = aes(x = AGE),
+                 binwidth = 1)
 ```
 
-The distribution of `CollAge` is bimodal, with peaks at around 30 and at around 70 years. 
+The distribution of `AGE` shows a mode at around 70 years, with a left shoulder. A possible explanation is that we see a cohort of younger patients who are worked up for inflammatory conditions and a larger cohort of older patients who are worked up for joint pain. 
 
-### CollectDateTime
 
-`CollectDateTime` is a **POSIXct** (datetime) column, which is appropriate.
+### SEX
 
-```{r}
-ggplot(data = esr) +
-    geom_histogram(mapping = aes(x = CollectDateTime),
-                  bins = 365)
-```
-
-```{r}
-ggplot(data = esr) +
-    geom_bar(mapping = aes(x = wday(CollectDateTime, label = TRUE, abbr = FALSE)))
-```
-
-Weekly cycling of ESR test volume is apparent. The weekly ESR test volume was approximately constant throughout 2017, without clear peaks or troughs.
-
-### PtName
-
-`PtName` is a **character** column, which is appropriate. 
-
-```{r}
-set.seed(1)
-esr %>%
-    sample_n(10) %>%
-    pull(PtName)
-```
-
-A random sample of 10 names is as expected.
-
-### PtNumber
-
-`PtNumber`, the MGH MRNs of the patients, is a **character** column, which is appropriate. 
-
-*Note*: if `PtNumber` were converted to integer, MRNs with leading zeroes would be altered. 
-
-```{r}
-set.seed(1)
-esr %>%
-    sample_n(10) %>%
-    pull(PtNumber)
-```
-
-A random sample of 10 MRNs shows that all are seven digits long, as expected for MGH patients.
-
-### PtSex
-
-`PtSex` is a **character** column, but since this is a categorial variable, we will convert it to a **factor**.
+`SEX` is a **character** column, but since this is a categorial variable, we will convert it to a **factor**.
 
 ```{r}
 esr <- esr %>%
-    mutate(PtSex = as_factor(PtSex))
+  mutate(SEX = as_factor(SEX))
   
 esr %>%
-  pull(PtSex) %>%
-  summary()
+  group_by(SEX) %>%
+  count()
 ```
 
-The majority of ESR tests were performed on female (`F`) patients. Unexpectedly, in addition to `M` and `F`, there are some rows with `PtSex` denoted as `U`.
+The majority (>60%) of ESR tests were performed on female (`F`) patients. 
+
+
+### DRAWN_DT_TM
+
+`DRAWN_DT_TM` is a **POSIXct** (datetime) column, which is appropriate.
+
+```{r}
+ggplot(data = esr) +
+  geom_histogram(mapping = aes(x = DRAWN_DT_TM),
+                 bins = 365)
+```
+
+Weekly cycling of ESR test volume is apparent. Weekly test volume appears approximately constant throughout 2017, without clear peaks or troughs.
+
+
+### RESULT
+
+Before doing anything else, let's review rows where `RESULT` has missing values.
 
 ```{r}
 esr %>%
-    filter(PtSex == "U")
+  filter(is.na(RESULT))
 ```
 
-It appears that the rows with `PtSex` equal to `U` belong to a small number of patients as well as CAP survey samples. Since these rows represent less than 0.1% of the whole data set, it will be safe to remove them.
+No clear pattern emerges. It might be interesting to follow up to find out the reason for missingness. However, since only 41/36723 (0.1%) of the data are affected, it seems reasonable to drop these rows:
 
 ```{r}
-esr <- esr %>%
-    filter(PtSex != "U")
+esr <- esr %>% 
+  drop_na(RESULT)
 ```
 
-### Result
 
-`Result` is a **character** column but should be an **integer**, so we will convert it. 
+`RESULT` is a **character** column but should be an **integer**, so we will convert it. 
 
 Before doing so, examine any rows that do *not* contain an integer value:
 
-```{r}
+```{r, warning=FALSE}
 esr %>%
-    filter(is.na(as.integer(Result))) %>%
-    group_by(Result) %>%
-    summarize(n = n()) %>% 
-    arrange(desc(n))
+  filter(RESULT %>% as.integer() %>% is.na) %>%
+  group_by(RESULT) %>%
+  summarize(n = n()) %>% 
+  arrange(desc(n))
 ```
 
-About 1400 rows (out of about 47,000) have a non-integer value in `Result` - about **3%**. The large majority of them have a value of `REFUS` or `CREDIT`, indicating that the sample was not run or reported. These rows should be discarded.
-
-Only a very small number of samples had excessive values (`>140`, `>144`). It is acceptable to discard these rows as well.
+About 1700 rows (out of about 37,000) have a non-integer value in `RESULT` - about **4%**. The large majority of these have a value of `< 1`. Dropping these results would skew the distribution to the right. It's better to replace each value `< 1` with `0`. 
 
 ```{r}
 esr <- esr %>%
-    mutate(Result = as.integer(Result)) %>%
-    drop_na(Result)
+  mutate(RESULT = case_when(
+    RESULT == "< 1" ~ "0",
+    TRUE ~ RESULT
+  ))
+```
+
+Now convert `RESULT` to integer and drop all remaining rows with a non-integer `RESULT` value. 
+
+```{r, warning=FALSE}
+esr <- esr %>%
+  mutate(RESULT = as.integer(RESULT)) %>%
+  drop_na(RESULT)
 ```
 
 ```{r}
 ggplot(data = esr) + 
-    geom_histogram(mapping = aes(Result),
-                   bins = 50)
+  geom_histogram(mapping = aes(RESULT))
 ```
 
-The distribution of ESR values appears to have a mode at around 10, with a long right tail, which represents the abnormal values.
-
-### TstOrderName
-
-`TstOrderName` should be `ESR` for each entry. It is a **character** column, which is acceptable. 
+Apparently we are dealing with some outliers. 
 
 ```{r}
 esr %>%
-    pull(TstOrderName) %>%
-    as_factor() %>%
-    summary()
+  filter(RESULT > 150) %>%
+  arrange(desc(RESULT))
 ```
 
-Each entry is equal to `ESR`, as expected.
+Very few high values, possibly transcription errors.
 
-### UserQAFlags
-
-`UserQAFlags` should be `H` for a high value and `L` for a low value, and empty otherwise. It is a **character** column, but since it is a categorial variable, we will convert it to a **factor**.
+Remove values >150:
 
 ```{r}
 esr <- esr %>%
-    mutate(UserQAFlags = as_factor(UserQAFlags))
-  
-esr %>%
-  pull(UserQAFlags) %>%
-  summary()
+  filter(RESULT <= 150)
 ```
 
-The majority of ESR values was reported as normal. A large fraction was classified as high (`H`). No ESR values were classified as low (`L`). This is expected, as the current MGH ESR reference ranges include zero, which is the lowest possible ESR result value.
+```{r}
+ggplot(data = esr) + 
+    geom_histogram(mapping = aes(RESULT),
+                   binwidth = 1)
+```
+
+The distribution of ESR values appears to have a mode at around 10, with a long right tail, which represents the abnormal values. 
+
+There are conspicuous peaks at regular intervals (multiples of 5), suggestive of the tendency of humans to record "nice" numbers.
+
 
 ### Overview of the Cleaned Data
 
 ```{r, warning=FALSE}
-library(DT)
-datatable(esr)
+esr
 ```
 
 
 ## Visualization and Modeling
 
-The primary goal of this project is to test is whether normal and abnormal ESR values can be separated into distinct populations, so that reference intervals can be set at the boundary. From the literature, I expect that ESR values increase with age and sex. To reduce these confounding effects, we will look at the relationship of ESR and age, broken down by sex.
+Do normal and abnormal ESR values naturally separate into distinct populations, when broken down by age and sex?
 
 ```{r}
 ggplot(data = esr) +
-    geom_point(mapping = aes(x = CollAge, y = Result),
-               size = 0.5, 
-               alpha = 0.1) + 
-    facet_wrap(~PtSex) + 
-    labs(x = "Patient Age (years)",
-         y = "ESR (mm/h)")
+  geom_point(mapping = aes(x = AGE, y = RESULT),
+             size = 0.5, 
+             alpha = 0.1) + 
+  facet_wrap(~SEX) + 
+  labs(x = "Patient Age (years)",
+       y = "ESR (mm/h)")
 ```
 
-There is no clear separation of normal and abnormal values. In addition, there are more data points on the `female` panel, which makes this graph difficult to interpret. 
+There is no clear separation of normal and abnormal values. In addition, there are more data points on the `Female` panel, which makes this graph difficult to interpret. 
 
 
 Will a separation become apparent when equal numbers of points are shown on each graph, and a density contour plot is overlaid?
@@ -305,155 +280,165 @@ Will a separation become apparent when equal numbers of points are shown on each
 ```{r}
 set.seed(1)
 esr_sample <- esr %>%
-    group_by(PtSex) %>%
-    sample_n(15000)
+  group_by(SEX) %>%
+  sample_n(13000)
 
 ggplot(data = esr_sample, 
-       mapping = aes(x = CollAge, 
-                     y = Result)) +
-    facet_wrap(~PtSex) + 
-    geom_point(size = 0.5, 
-               alpha = 0.1) +
-    geom_density2d(color = "deepskyblue") +
-    labs(x = "Patient Age (years)",
-         y = "ESR (mm/h)")
+       mapping = aes(x = AGE, 
+                     y = RESULT)) +
+  facet_wrap(~SEX) + 
+  geom_point(size = 0.5, 
+             alpha = 0.1) +
+  geom_density2d(color = "deepskyblue") +
+  labs(x = "Patient Age (years)",
+       y = "ESR (mm/h)")
 ```
 
 Subsampling and density contour plotting did not reveal separable populations. This graph clearly shows that female patients tended to have higher ESR levels than male patients, and that older patients tended to have higher ESR levels than younger patients. However, this effect was not universal, and many old patients of both genders had low ESR values. 
 
 
-Do the MGH reference ranges appear to appropriately capture patients with normal ESRs? Abnormal ESRs?
+Do the HUP reference ranges appear to appropriately capture patients with normal ESRs? Abnormal ESRs?
 
 ```{r}
 esr_sample <- esr_sample %>%
-    mutate(
-        MGH = case_when(
-            PtSex == "M" & Result >13 ~ "high",
-            PtSex == "F" & Result >20 ~ "high",
-            TRUE ~ "normal") %>% 
-                factor(levels = c("high", "normal"))
-    )
+  mutate(
+    HUP = case_when(
+      (SEX == "Male" & RESULT > 15) | 
+        (SEX == "Female" & AGE <= 50 & RESULT > 25) |
+        (SEX == "Female" & AGE >50 & RESULT > 30) ~ "high",
+      TRUE ~ "normal") %>% 
+      factor(levels = c("high", "normal"))
+  )
 
 ggplot(data = esr_sample, 
-       mapping = aes(x = CollAge, 
-                     y = Result, 
-                     color = MGH)) +
-    geom_point(size = 0.5, 
-               alpha = 0.2) +
-    geom_density2d(color = "black", 
-                   size = 0.3) +
-    facet_wrap(~PtSex) + 
-    labs(x = "Patient Age (years)",
-         y = "ESR (mm/h)")
+       mapping = aes(x = AGE, 
+                     y = RESULT, 
+                     color = HUP)) +
+  geom_point(size = 0.5, 
+             alpha = 0.2) +
+  geom_density2d(color = "black", 
+                 size = 0.3) +
+  facet_wrap(~SEX) + 
+  labs(x = "Patient Age (years)",
+       y = "ESR (mm/h)") + 
+  guides(color = FALSE)
 ```
 
-MGH's normal reference range appears to capture the majority of normal ESR results. It does not capture the tendency of older individuals to have higher ESR values. However, this tendency is not universal, and it is uncertain whether high ESR values in older individuals are physiologically normal.
+HUP's normal reference range appears to capture the majority of normal ESR results. It does not capture the tendency of older individuals to have higher ESR values. However, this tendency is not universal, and it is uncertain whether high ESR values in older individuals are physiologically normal.
 
 #### ARUP Laboratories
 
 ```{r}
 esr_sample <- esr_sample %>%
-    mutate(
-        ARUP = case_when(
-            PtSex == "M" & Result >10 ~ "high",
-            PtSex == "F" & Result >20 ~ "high",
-            TRUE ~ "normal") %>% 
-                factor(levels = c("high", "normal"))
-    )
-  
+  mutate(
+    ARUP = case_when(
+      SEX == "Male" & RESULT >10 ~ "high",
+      SEX == "Female" & RESULT >20 ~ "high",
+      TRUE ~ "normal") %>% 
+      factor(levels = c("high", "normal"))
+  )
+
 ggplot(data = esr_sample, 
-       mapping = aes(x = CollAge, 
-                     y = Result, 
+       mapping = aes(x = AGE, 
+                     y = RESULT, 
                      color = ARUP)) +
-    geom_point(size = 0.5, 
-               alpha = 0.2) +
-    geom_density2d(color = "black", 
-                   size = 0.3) +
-    facet_wrap(~PtSex) + 
-    labs(x = "Patient Age (years)",
-         y = "ESR (mm/h)")
+  geom_point(size = 0.5, 
+             alpha = 0.2) +
+  geom_density2d(color = "black", 
+                 size = 0.3) +
+  facet_wrap(~SEX) + 
+  labs(x = "Patient Age (years)",
+       y = "ESR (mm/h)") + 
+  guides(color = FALSE) + 
+  ggtitle("ARUP Laboratories")
 ```
 
 #### Quest Diagnostics
 
 ```{r}
 esr_sample <- esr_sample %>%
-    mutate(
-        Quest = case_when(
-            (PtSex == "M" & CollAge <=50 & Result >15) |
-            (PtSex == "M" & CollAge >50 & Result >20) |
-            (PtSex == "F" & CollAge <=50 & Result >20) |
-            (PtSex == "F" & CollAge >50 & Result >30) ~ "high",
-            TRUE ~ "normal") %>% 
-                factor(levels = c("high", "normal"))
-    )
-  
+  mutate(
+    Quest = case_when(
+      (SEX == "Male" & AGE <=50 & RESULT >15) |
+        (SEX == "Male" & AGE >50 & RESULT >20) |
+        (SEX == "Female" & AGE <=50 & RESULT >20) |
+        (SEX == "Female" & AGE >50 & RESULT >30) ~ "high",
+      TRUE ~ "normal") %>% 
+      factor(levels = c("high", "normal"))
+  )
+
 ggplot(data = esr_sample, 
-       mapping = aes(x = CollAge, 
-                     y = Result, 
+       mapping = aes(x = AGE, 
+                     y = RESULT, 
                      color = Quest)) +
-    geom_point(size = 0.5, 
-               alpha = 0.2) +
-    geom_density2d(color = "black", 
-                   size = 0.3) +
-    facet_wrap(~PtSex) + 
-    labs(x = "Patient Age (years)",
-         y = "ESR (mm/h)")
+  geom_point(size = 0.5, 
+             alpha = 0.2) +
+  geom_density2d(color = "black", 
+                 size = 0.3) +
+  facet_wrap(~SEX) + 
+  labs(x = "Patient Age (years)",
+       y = "ESR (mm/h)") + 
+  guides(color = FALSE) + 
+  ggtitle("Quest Diagnostics")
 ```
 
 #### LabCorp
 
 ```{r}
 esr_sample <- esr_sample %>%
-    mutate(
-        LabCorp = case_when(
-            (PtSex == "M" & CollAge <=50 & Result >15) |
-            (PtSex == "M" & CollAge >50 & Result >30) |
-            (PtSex == "F" & CollAge <=50 & Result >32) |
-            (PtSex == "F" & CollAge >50 & Result >40) ~ "high",
-            TRUE ~ "normal") %>% 
-                factor(levels = c("high", "normal"))
-    )
+  mutate(
+    LabCorp = case_when(
+      (SEX == "Male" & AGE <=50 & RESULT >15) |
+        (SEX == "Male" & AGE >50 & RESULT >30) |
+        (SEX == "Female" & AGE <=50 & RESULT >32) |
+        (SEX == "Female" & AGE >50 & RESULT >40) ~ "high",
+      TRUE ~ "normal") %>% 
+      factor(levels = c("high", "normal"))
+  )
 
 ggplot(data = esr_sample, 
-       mapping = aes(x = CollAge, 
-                     y = Result, 
+       mapping = aes(x = AGE, 
+                     y = RESULT, 
                      color = LabCorp)) +
-    geom_point(size = 0.5, 
-               alpha = 0.2) +
-    geom_density2d(color = "black", 
-                   size = 0.3) +
-    facet_wrap(~PtSex) + 
-    labs(x = "Patient Age (years)",
-         y = "ESR (mm/h)")
+  geom_point(size = 0.5, 
+             alpha = 0.2) +
+  geom_density2d(color = "black", 
+                 size = 0.3) +
+  facet_wrap(~SEX) + 
+  labs(x = "Patient Age (years)",
+       y = "ESR (mm/h)") + 
+  guides(color = FALSE) + 
+  ggtitle("LabCorp")
 ```
 
 #### Bakerman's ABCs
 
 ```{r}
 esr_sample <- esr_sample %>%
-    mutate(
-        Bakerman = case_when(
-            (CollAge <18 & Result >13) ~ "high",
-            (PtSex == "M" & CollAge >=18 & CollAge <40 & Result >15) |
-            (PtSex == "F" & CollAge >=18 & CollAge <40 & Result >20) |
-            (PtSex == "M" & CollAge >=40 & Result > (CollAge/2)) |
-            (PtSex == "F" & CollAge >=40 & Result > (CollAge/2 + 5)) ~ "high",
-            TRUE ~ "normal") %>% 
-                factor(levels = c("high", "normal"))
-    )
+  mutate(
+    Bakerman = case_when(
+      (AGE <18 & RESULT >13) ~ "high",
+      (SEX == "Male" & AGE >=18 & AGE <40 & RESULT >15) |
+        (SEX == "Female" & AGE >=18 & AGE <40 & RESULT >20) |
+        (SEX == "Male" & AGE >=40 & RESULT > (AGE/2)) |
+        (SEX == "Female" & AGE >=40 & RESULT > (AGE/2 + 5)) ~ "high",
+      TRUE ~ "normal") %>% 
+      factor(levels = c("high", "normal"))
+  )
 
 ggplot(data = esr_sample, 
-       mapping = aes(x = CollAge, 
-                     y = Result, 
+       mapping = aes(x = AGE, 
+                     y = RESULT, 
                      color = Bakerman)) +
-    geom_point(size = 0.5, 
-               alpha = 0.2) +
-    geom_density2d(color = "black", 
-                   size = 0.3) +
-    facet_wrap(~PtSex) + 
-    labs(x = "Patient Age (years)",
-         y = "ESR (mm/h)")
+  geom_point(size = 0.5, 
+             alpha = 0.2) +
+  geom_density2d(color = "black", 
+                 size = 0.3) +
+  facet_wrap(~SEX) + 
+  labs(x = "Patient Age (years)",
+       y = "ESR (mm/h)") + 
+  guides(color = FALSE) + 
+  ggtitle("Bakerman's ABCs")
 ```
 
 

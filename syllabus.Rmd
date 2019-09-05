@@ -1,7 +1,18 @@
 ---
 title: "Reproducible Clinical Data Analysis with R/RStudio"
-output: html_notebook
+output:
+  pdf_document: 
+    latex_engine: xelatex
+mainfont: Arial
+fontsize: 12pt
+geometry: margin=0.75in
 ---
+
+## Instructors
+
+Stephan Kadauke, MD, PhD  
+Daniel Herman, MD, PhD  
+Amrom Obstfeld, MD, PhD  
 
 ## Intended Audience
 
@@ -9,13 +20,21 @@ Pathology residents, fellows, and faculty who have some experience with Microsof
 
 ## Course Description
 
-This course explores problems with "traditional" approaches to data analysis (i.e. using Microsoft Excel) and introduces an alternative that is reproducible, transparent, and suited for collaboration. We will take advantage of the R programming language and the RStudio integrated development environment, since these tools are free, wildly popular, and especially amenable to reproducible reporting.
+This course explores problems with "traditional" approaches to data analysis (i.e. using Microsoft Excel) and introduces an alternative that is reproducible, transparent, and suitable for collaboration. We will take advantage of the R programming language and the RStudio integrated development environment, since these tools are free, wildly popular, and especially amenable to reproducible report writing.
 
-In four 1.5 hour sessions, spread over the course of two weeks, we will cover how to import data from files and databases, how to explore the data and visualize it, and how to put together an attractively formatted report that summarizes the approach and findings, along with all the analytic programming code. Importantly, this report will be reproducible: anyone who has access to the raw data will be able to exactly reproduce all analyses and graphs in the report.
+In an intensive one-day workshop, we will cover how to import data from files and databases, how to explore the data and visualize it, and how to put together an attractively formatted report that summarizes the approach and findings, along with all the analytic programming code. Importantly, this report will be reproducible: anyone who has access to the raw data will be able to exactly reproduce all analyses and graphs in the report.
 
-We will practice skills in class as well as outside. Each session’s lectures will be broken up by several interactive coding exercises to reinforce material just covered. After the four in-class sessions, participants will complete a course project: to generate a reproducible report that relates to a clinical quality or research problem. While this may seem daunting, technical help will be readily available. Finished course projects will be presented a few weeks after conclusion of the lecture part of the course. Note that "getting your hands dirty" is critical for cementing the mental models taught in the course. In addition, you may be able to submit the findings of your course project as a conference abstract for ASCP, USCAP, or similar.
+We will practice skills in class as well as outside. Lecture material will be broken up by several interactive coding exercises to reinforce material just covered. After the workshop, participants will complete a course project: to generate a reproducible report that relates to a clinical quality or research problem. While this may seem daunting, we will provide a number of resources, including:
 
-This is **not** a programming course, and you will **not** be skilled at computer programming after completing it. But you will gain confidence in your ability to use R/RStudio to create a reproducible report in which you import, explore, and visualize clinical data.
+- Printed course packets will be distributed that contain all slides for self-study
+- We will hold weekly "hackathons" during which we will actively work with participants on solving technical problems employing a one-on-one "pair programming" approach with experienced R users
+- We will provide each participant with a free 6-month subscription to Datacamp, a leading provider of online interactive data science tutorials
+
+Finished course projects will be presented a few weeks after the workshop. Note that "getting your hands dirty" is critical for cementing the mental models taught in the course.
+
+This is **not** a programming course, and you will **not** be skilled at computer programming after completing it. But you will gain confidence in your ability to use R/RStudio to create a reproducible report in which you import, explore, and visualize clinical data. 
+
+\pagebreak
 
 ## Goals
 
@@ -27,21 +46,20 @@ This is **not** a programming course, and you will **not** be skilled at compute
 
 By the end of the course, participants will:
 
-1. Define “reproducibility” and explain its importance as it relates to data analysis
-2. Gain confidence in their ability to query databases, transform data, and create data visualizations
+1. Define "reproducibility" and explain its importance as it relates to data analysis
+2. Gain confidence in their ability to import data, transform data, and create data visualizations using R
 3. Generate and present, with the assistance of the instructor and peers, a reproducible report that 
-	a. Poses a question broadly relating to an aspect of quality of care;
+	a. Poses a question broadly relating to an aspect of quality of care or clinical research;
 	b. Retrieves data from a data file or a clinical database;
-	c. Visualizes the data graphically; and
+	c. Visualizes the data graphically; and/or
 	d. Presents relevant statistical summaries to address the question.
 
 
-## Syllabus
+## Workshop Agenda
 
-#### Session 1: Introducing Reproducible Clinical Data Analysis with R/RStudio
+Workshops will be held on **7/7/19** and **7/14/19**, and participants will be assigned to one of the two workshops. The workshop runs from **8:30 AM** through **4:00 PM** and will be broken down into four sessions, each approximately 1.5 hours. Refreshments and lunch will be provided. Location is TBD.
 
-**Date:**  
-**Location:**  
+### Session 1: Introducing Reproducible Clinical Data Analysis with R/RStudio
 
 - Reproducibility Defined
 - Why Bother?
@@ -49,11 +67,10 @@ By the end of the course, participants will:
 - What is R?
 - What is RStudio?
 - What is R Markdown?
+- R Markdown Syntax
+- Structure of a Reproducible Report
 
-#### Session 2: Getting Data from CSV files, Excel, and Databases
-
-**Date:**  
-**Location:**  
+### Session 2: Getting Data from CSV files, Excel, and Databases
 
 - When Is It OK to Look at Patient Data?
 - Importing CSV Files
@@ -62,10 +79,9 @@ By the end of the course, participants will:
 - What Is a Database?
 - Importing Data from Databases
 
-#### Session 3: Exploring and Understanding Your Data
+### Lunch
 
-**Date:**  
-**Location:**  
+### Session 3: Exploring and Understanding Your Data
 
 - Visualizing Data with `ggplot2`
 - Isolating Data with `select`, `filter`, and `arrange`
@@ -73,14 +89,8 @@ By the end of the course, participants will:
 - Augmenting Data with `mutate`
 - Grouping and Summarizing Data with `group_by` and `summarize`
 
-#### Session 4: Creating Reproducible Reports with R Markdown
+### Session 4: Creating Reproducible Reports with R Markdown
 
-**Date:**  
-**Location:**  
-
-- Connecting to a Clinical Database
-- R Markdown Syntax
-- Structure of a Reproducible Report
 - Hypothesis-Driven Data Analysis
 - Data Acquisition
 - Data Exploration and Clean-up
@@ -89,7 +99,16 @@ By the end of the course, participants will:
 - Visualization and Modeling
 - Summarizing Your Findings
 
-#### Course Project Presentations
+## Course Project Hackathons and Course Presentations
 
-**Date:**  
-**Location:**  
+Dates below are subject to change.
+
+7/24/19 5 PM Hackathon #1
+
+7/31/19 5 PM Hackathon #2
+
+8/7/19 5 PM Hackathon #3
+
+8/14/19 5 Hackathon #4
+
+TBD Course Project Presentations - we will find a time that works for all presenters.

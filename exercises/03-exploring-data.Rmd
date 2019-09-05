@@ -7,20 +7,22 @@ output: html_notebook
 
 ### Import ESR Data
 
-If you haven't done so, download `esr_data.csv` from your e-mail and place it in the same folder as this document. Then run the code.
+Run the following code to import the practice data set.
 
-```{r, warning = FALSE}
+```{r, message = FALSE, warning = FALSE}
 library(tidyverse)
-esr <- read_csv("esr_data.csv", col_types = "iTcccicc")
+library(lubridate)
+esr <- read_csv("esr.csv") %>%
+  filter(year(DRAWN_DT_TM) == 2017)
 ```
 
-### Practice ggplot-ting
+### Practice ggplotting
 
-Recall the histogram of ESR values we examined at the beginning of the session. You will now create it yourself. You will need to:
+Recall the histogram of ESR values from the beginning of the session. You will now create it yourself! You will need to:
 
-1. Pick a data set: esr
-2. Choose a geom function: geom_histogram()
-3. Map aesthetic properties of the graph to variables of the data frame (in this case, the "Result" variable should be on the x axis; on histograms the y axis represents the number of values that fall within an interval): x = Result
+1. Pick a data set: *esr*
+2. Choose a geom function: *geom_histogram()*
+3. Map aesthetic properties of the graph to variables of the data frame (in this case, the "RESULT_VALUE_NUMERIC" variable should be on the x axis; on histograms the y axis always represents the number of values that fall within an interval): *x = RESULT_VALUE_NUMERIC*
 
 Fill in the blanks and run the code to create the plot.
 
@@ -28,28 +30,38 @@ Fill in the blanks and run the code to create the plot.
 
 ```{r, message = FALSE}
 ggplot(data = ______) +
-    ______________(mapping = aes(__________))
+  ______(mapping = aes(______)) + 
+  xlim(0, 150)
 ```
 
 Congratulations, you created your first ggplot!
 
-Now make a histogram of the "CollAge" variable from "esr".
 
-```{r, message = FALSE}
-ggplot(data = ______) +
-    ______________(mapping = aes(__________))
-```
 
-Make a scatter plot with "CollAge" on the x axis and "Result" on the y axis. 
 
-Hint: Look at the Cheat Sheet to figure out which geom_ function to use to make a scatter plot.
+Make a scatter plot with "AGE" on the x axis and "RESULT_VALUE_NUMERIC" on the y axis. (Hint: Look at the Cheat Sheet to figure out which geom_ function to use to make a scatter plot!)
 
 ```{r, message = FALSE, warning = FALSE}
 ggplot(data = ______) +
-    __________(mapping = aes(x = _______, y = ______))
+  ______(mapping = aes(x = ______, y = ______)) +
+  ylim(0,150)
 ```
 
-Make a scatter plot with "CollectDateTime" on the x axis and "Result" on the y axis.
+
+
+
+
+Can you figure out how to modify the above code to draw a contour plot (aka. 2D density plot)? Use the cheat sheet!
+
+```{r}
+
+```
+
+
+
+
+
+To the above plot, add a third aesthetic, *color*, to indicate patient sex (SEX).
 
 ```{r}
 
@@ -61,88 +73,134 @@ Stop here.
 
 ******************
 
+
+
 ## Your Turn #3: Isolating Data
 
 ### select()
 
-The following code chunk selects the the "CollAge" and "Result" columns from the "esr" data frame. Modify the code to only select the "PtSex" column.
+Fill in the blanks below to have R select the "AGE" and "SEX" columns from the "esr" data frame. 
 
 ```{r}
-select(esr, CollAge, Result)
+select(______, ______, ______)
 ```
+
+
+
+
+Select the "HUP_MRN", "PT_NAME", and "RESULT_VALUE_NUMERIC" columns from "esr".
+
+```{r}
+
+```
+
+
+
 
 ### filter()
 
-Show all rows where the variable "CollAge" is greater than or equal to 100
+Show all rows where the variable "AGE" is greater than or equal to 100.
 
 ```{r}
 filter(esr, __________)
 ```
 
-Show all rows that have a missing value for "Result".
+
+
+
+Show all rows that have a missing value for "RESULT_VALUE_NUMERIC". (Hint: Look at the slide titled "Logical Tests"!)
 
 ```{r}
-______(______, __________)
+______(______, ______)
 ```
+
+
+
+
+Rewrite the above code so that it uses the pipe (%>%) operator to plug "esr" into the filter() function. (Hint: Look at the slide titled "The Pipe Operator %>%"!)
+
+```{r}
+
+```
+
+
+
 
 #### Combined logical tests
 
-There are three operators which allow you to combine logical tests.
+There are three operators which allow you to combine two or more logical tests.
 
-&  "and"
-|  "or"
-!  "not"
+   &  "and"
+   |  "or"
+   !  "not"
 
-For example, the following code uses the "and" (&) operator to select rows in which "PtSex" is neither "F" nor "M".
-
-```{r}
-filter(esr, PtSex != "F" & PtSex != "M")
-```
-
-Try the following:
-
-* Show all rows where "PtSex" is "M" *and* "Result" is greater than 13.
+For example, the following code uses the "and" (&) operator to select rows in which "SEX" is neither "Female" nor "Male".
 
 ```{r}
-filter(esr, _________________________)
+filter(esr, SEX != "Female" & SEX != "Male")
 ```
 
-* Re-write the code so it uses the pipe (%>%) operator to plug "esr" into the filter() function. (Hint: look at the slide titled "The Pipe Operator %>%")
+
+
+
+Show all rows where "SEX" is "Male" *and* "RESULT_VALUE_NUMERIC" is greater than 13.
+
+```{r}
+filter(esr, ______)
+```
+
+
+
+
+Rewrite the above code so that it uses the pipe (%>%) operator to plug "esr" into the filter() function.
 
 ```{r}
 
 ```
+
+
+
 
 ### arrange()
 
-Alter the code below to sort by "CollectDateTime".
+Fill in the blank below to sort by "DRAWN_DT_TM".
 
 ```{r}
-arrange(esr, _______________)
+arrange(esr, ______)
 ```
 
-Now change the order so that oldest samples are shown first.
+
+
+
+Now change the order so that most recently drawn samples are shown first.
 
 ```{r}
-arrange(______, _______________)
+arrange(______, ______)
 ```
 
-Re-write the above code so it uses the pipe operator.
+
+
+
+Rewrite the above code so it uses the pipe operator to plug "esr" into arrange().
 
 ```{r}
 
 ```
+
+
+
 
 ### Pipelines
 
 Now let's try to construct a pipeline that give us an ordered list of results from women with a normal ESR value, by age.
 
-Write a pipeline that
+Write a pipeline that:
+
 1. Starts with the data frame "esr", then
-2. Selects the CollAge, PtSex, and Result columns, then
-3. Filters so only rows in which PtSex is "F" remain, then
-4. Filters so only rows in which CollAge is smaller than or equal to 20 remain, then
-5. Arranges the results first by age, then (as a tie-breaker) by Result, in descending order.
+2. Selects the "AGE", "SEX", and "RESULT_VALUE_NUMERIC" columns, then
+3. Filters so only rows in which "SEX" is equal to "Female" remain, then
+4. Filters so only rows in which "AGE" is smaller than or equal to 20 remain, then
+5. Arranges the results first by age (in ascending order), then as a tie-breaker by ESR result (in descending order).
 
 ```{r}
 
@@ -157,7 +215,7 @@ Stop here.
 
 In this exercise, we will find the number of distinct patients in the the "esr" data set and will find the average and standard deviation of the age of patients, broken down by patient sex.
 
-One problem is that many patients in "esr" have multiple results. We don't want the results to be skewed towards patients who have multiple results logged. To solve this problem, we will take advantage of the dplyr verb "distinct", which removes duplicate values in a data frame.
+One problem is that many patients in "esr" have multiple results. We don't want the results to be skewed towards patients who have multiple results logged. To solve this problem, we will take advantage of the dplyr function "distinct", which removes duplicate values in a data frame.
 
 Can you figure out how to use distinct() to answer the following: How many distinct patients are represented in "esr"?
 
@@ -165,7 +223,10 @@ Can you figure out how to use distinct() to answer the following: How many disti
 
 ```
 
-Next we will use the set of distinct patients and pipe them into the group_by() and summarize() functions to compute three summary statistics about "esr", separately for men and women (i.e. grouped by "PtSex"):
+
+
+
+Next we will use the set of distinct patients and pipe them into the group_by() and summarize() functions to compute three summary statistics about "esr", separately for men and women (i.e. grouped by "SEX"):
 
 1. The number of distinct patients.
 2. The average (mean) age of patients.
@@ -175,11 +236,11 @@ Note: we need to pass the option ".keep_all = TRUE" to distinct() because otherw
 
 ```{r}
 esr %>%
-    distinct(_________, .keep_all = TRUE) %>%
-    group_by(_________) %>%
-    summarize(MeanAge = ___________,
-              SDAge   = ___________,
-              nPts    = ___________)
+    distinct(______, .keep_all = TRUE) %>%
+    group_by(______) %>%
+    summarize(MeanAge = ______,
+              SDAge   = ______,
+              nPts    = ______)
 ```
 
-Great! Do the results surprise you? Why or why not? Why do you think there is a row with PtSex "U"?
+If you've gotten this code chunk to work, great job! Do the results surprise you? Why or why not? 
