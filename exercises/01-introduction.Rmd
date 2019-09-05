@@ -3,46 +3,68 @@ title: "R Notebook"
 output: html_notebook
 ---
 
-This is an *R Notebook*. R Notebooks are written in a language called *R Markdown*. An R Notebook is like an electronic lab notebook, but for data analysis. You can use R Notebooks to take notes, write code, and you can run that code and see the results in the same document. You can also turn the R Markdown document into an attractively formatted *HTML* page. More on that later.
+## Introduction
 
-To take notes, simply edit the text in this document. For example, edit the following line to replace *XXX* with your name:
+This is an *R Notebook*. R Notebooks are written in a language called *R Markdown*. We will take a closer look at R Markdown today.
+
+An *R Notebook* is a specific type of R Markdown document. Think of it as an electronic lab notebook, but for data analysis. You will use R Notebooks to: 
+
+- write *narrative* about your data analysis in plain English -- e.g. explain your experimental design or write down the interpretation of a graphical plot;
+- write *code* in R; and
+- see the *results* of the R code after it's been run, e.g. a graphical plot or a table.
+
+You can turn an R Notebook into an attractively formatted *HTML* document. This is called *rendering* or *previewing*. Click the *Preview* button on the top of this window to try it now. (You may then close the browser window that will open up.)
 
 
-My name is *XXX*, and I'm editing an R Notebook!
+## Editing R Markdown
+
+If you are reading this, you are most likely using the *RStudio Editor* at the moment. The RStudio Editor makes it easy to create and edit R Notebooks.
+
+Adding narrative is simple: just use the mouse or the keyboard to move the cursor to the place where you want to make a change, and then add or change the text. For practice, edit the following line to replace *XXX* below with your name:
 
 
-In an R Markdown document, code goes into *code chunks*. Each code chunk starts with three back-ticks and the letter "r" in curly brackets. (On your keyboard, the back-tick is usually located directly below your Escape key). Each code chunk ends with a line that has three backticks and nothing else. The RStudio editor makes the background color of code chunks gray. This way it's easy to see where all the code chunks are in your R Notebook. 
+  My name is *XXX*, and I'm editing an R Notebook!
 
-You can *run the code* in a code chunk by clicking the *green triangle* in the upper right corner of the code chunk. The results will appear beneath the chunk. Try it!
+
+Great! Now hit *Preview* again and see if you can the change you just made in the rendered HTML document.
+
+
+## Code Chunks
+
+In an R Markdown document, R code goes into *code chunks*. 
+
+Each code chunk 
+
+- starts with three back-ticks ``` and the letter "r" in curly brackets {}. (On your keyboard, the back-tick is usually located directly below your Escape key). 
+- ends with a line that has three backticks and nothing else. 
+- has any number of lines of R code in between these two features.
+
+See, for example, here:
+
+```{r}
+# R code goes here
+```
+
+As you can see directly above, code chunks have a gray background in the RStudio editor. This way it's easy to see where all the code chunks are in your R Notebook. 
+
+
+## Running code chunks
+
+You can *run the code* in a code chunk by clicking the *green triangle* in the upper right corner of the code chunk. The results will appear beneath the chunk. Try running the code chunk below now!
 
 ```{r}
 plot(cars)
 ```
 
-Good job!
+If you can see a scatterplot - good job!
 
-# Adding chunks
+Click *Preview* again to see how the graphical plot will look like in the rendered document!
 
-Try making a code chunk below and run it. The code chunk should run only the following command: 
+## More code chunks
+
+Your turn now: try writing a code chunk. The code chunk should run only the following command: 
 
 plot(pressure)
 
 
 
-
-
-# HTML version
-
-When you save the notebook, an HTML file containing the code and output will be saved alongside it. This makes a nice, polished report of your work that you can share with others.
-
-Click the *Preview* button at the top of this document. Take a look at the rendered HTML page on the right. Doesn't it look nice?
-
-# Packages
-
-You can immediately run any function from base R within a notebook, But if you'd like to run a function that comes in an R package, you will need to first load the package in the notebook.
-
-Can you figure out how to load the tidyverse package? (Hint: check the slide "A Word About Packages"!)
-
-```{r}
-
-```

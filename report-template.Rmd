@@ -1,209 +1,274 @@
 ---
-title: "Reproducible Report Template"
+title: "Course Project Template"
 output: html_notebook
 --- 
 
-```{r setup, include=FALSE}
-library(tidyverse)
-library(odbc)
-library(lubridate)
-```
+The purpose of this template is:
+
+1. to recap some of the concepts covered in the course, and 
+2. to provide a resource of code snippets that will be useful for your course project (and hopefully other future R projects!)
+
+As you prepare the report, you will likely encounter strange errors and get stuck multiple times. **That's normal and there's no way around it as you learn**. The basic approach for getting un-stuck is to spend a **limited** amount of time **actively** looking for the solution and then **asking for help**. 
+
+Two common scenarios, and a systematic way to troubleshoot them are:
+
+1. **You encounter an unexpected result or error**
+    * Check **spelling** - missing or extra quotes, commas, parentheses, spaces, and misspelled function names
+    * Read the error message and try to make sense of it
+    * Google the error message (cut and paste!)
+2. **You (kind of) know what you want to do but don't know how to do it in R**
+    * Consult a relevant [RStudio Cheat Sheet](https://www.rstudio.com/resources/cheatsheets/)
+    * If you know it was covered in the workshop, re-watch the workshop. The shared drive for Penn Pathology is: smb://uphsfp15.uphs.upenn.edu/SHAREDATA2/HUP/Pathology/Reproducible_Clinical_Data_Analysis
+    * Do a Datacamp tutorial. Recommended tutorials include:
+        * [Introduction to the Tidyverse](https://www.datacamp.com/courses/introduction-to-the-tidyverse) is highly recommended for everyone. 
+        * [Data Visualization with ggplot2 (Part 1)](https://www.datacamp.com/courses/data-visualization-with-ggplot2-1) for more practice with ggplot.
+        * [Data Manipulation in R with dplyr](https://www.datacamp.com/courses/dplyr-data-manipulation-r-tutorial) for more practice with dplyr
+        * [Cleaning Data in R](https://www.datacamp.com/courses/cleaning-data-in-r) is useful if you have messy data that needs to be cleaned.
+        * [Joining Data in R with dplyr](https://www.datacamp.com/courses/joining-data-in-r-with-dplyr) is useful if you need to combine data from two separate data frames.
+
+Asking good questions when you get stuck is a key skill for coding and collaborative data analysis. I recommend the following formula:
+
+>  I tried to accomplish (*goal*) so I tried this code: 
+>  (*copy and paste the code here*)
+>  
+>  I expected this: ...
+>  
+>  Instead I get this result / error: 
+>  (*copy and paste the result or error message*)
+
+The best resources for asking questions are:
+
+1. Email one of the course directors: [Stephan](mailto:kadaukes@email.chop.edu), [Amrom](mailto:obstfelda@email.chop.edu), or [Dan](mailto:Daniel.Herman2@uphs.upenn.edu)
+2. Post your question on the [CHOP R User Group Slack channel](https://choprusergroup.slack.com)
+
+What follows is a suggested structure for a reproducible report as well as some code snippets that you might want to use or modify.
+
 
 ## Background and Objectives
 
 This section should address the following questions:
 
-* What is the question to be addressed by the project?
-* How could addressing this question change patient management or further generalizable knowledge?
-* What data resources could be used?
-* What are the first 1-2 key graphs or statistics that should be obtained?
+* What is the question to be addressed by this project?
+* How could addressing this question change patient management and/or further generalizable knowledge?
+  * What's the point of doing this analysis? 
+  * Would anyone else care about the results?
+* What are the first 1-2 simple but important graphs or statistics that you'd like to generate?
 
 
 ## Data Acquisition
 
-* For database sources, include the following:
-    * Database server address
-    * Database table name
-    * No login credentials!
-* For data file sources, include the following:
-    * Origin, with references
-    * File name and format
-* For all data sources, include the following:
-    * General properties of the data set
-    * Code Book
+The **narrative** of this section should cover the following:
 
-### Sample Code
+* General properties of the data set
+* For data files:
+    * Origin, with details on how is was created and/or source from where it was acquired
+    * File name and file format
+* For databases:
+    * Database server, database, and table name (**not** login credentials!)
+* Code Book
+    * List each column of the data set (after isolating data of interest) with a concise description. 
 
-#### Load CSV file
+The **code** in this section should accomplish the following:
+
+* For data files:
+    * Import your data into R
+    * Isolate the data of interest
+* For databases:
+    * Connect to the database
+    * Query the data and place it into a data frame
+    * Optional: Dump the data in a local file
+    * Disconnect
+
+### Import data file
+
+Don't forget to load necessary packages first:
+
+```{r}
+library(tidyverse)
+library(lubridate)
+```
+
+#### CSV file
+
+Here is a sample code snippet to load a CSV file named `my_data.csv` into a data frame named `my_data`. Try to give your data more descriptive names than that!
 
 ```{r}
 my_data <- read_csv("my_data.csv")
 ```
 
-#### Load Excel file
+#### Excel file
+
+This code snippet loads and Excel file `my_data.xlsx` into a data frame named `my_data`. We need to load the `readxl` package for the `read_excel()` function to work.  
 
 ```{r}
 library(readxl)
 my_data <- read_excel("my_data.xlsx")
 ```
 
-#### Connect to the MGH Lab Utilization Datamart
+### Isolate data of interest
 
-```{r connect-datamart}
-username <- function() {
-    .rs.api.showPrompt(title = "Username", 
-                       message = "Please enter your Partners User Name")
-}
-
-password <- function() {
-    .rs.api.askForPassword(prompt = "Please enter your Partners Password")
-}
-
-con <- dbConnect(odbc(),
-                 dsn = "PHSSQL2057",
-                 uid = str_c("PARTNERS\\", username()),
-                 pwd = password())
-  
-labresults_tbl <- tbl(con, "MGHLABUTIL_LabResults")
-```
-
-#### List all test order names, ordered by frequency
+This sample code snippet would select the `Patient_MRN`, `Patient_Age`, `Patient_Sex`, `Date_of_Collection`, and `Result` columns and then filter the rows such that only those rows remain in which `Date_of_Collection` is within the year of 2017. The `arrange()` function would then sort rows by `Date_of_Collection`. 
 
 ```{r}
-tests <- labresults_tbl %>%
-    select(TstOrderName, CollectDateTime) %>%
-    filter(year(CollectDateTime) == "2017") %>%
-    group_by(TstOrderName) %>%
-    summarize(count = n()) %>%
-    arrange(desc(count)) %>%
-    collect()
+my_data <- my_data %>%
+  select(Patient_MRN,
+         Patient_Age,
+         Patient_Sex,
+         Date_of_Collection,
+         Result) %>%
+  filter(year(Date_of_Collection) == 2017) %>%
+  arrange(Date_of_Collection)
 ```
 
-#### Database Query
+### Code book
 
-```{r query}
-esr <- labresults_tbl %>%
-  select(column1,
-         column2,
-         ...) %>%
-  filter(condition1,
-         condition2,
-         ...,
-         year(CollectDateTime) == "2017") %>%
-  arrange(CollectDateTime) %>%
-  collect()
-```
+The code book is where you document concisely document the data contained in each column. Be sure to include enough detail to avoid misunderstandings. For example:
 
-#### Data Dump
+- **Patient_MRN**. Patient medical record number (HUP)
+- **Patient_Age**. Patient age (in years) at the time the specimen was collected.
+- **Patient_Sex**. Patient sex. M = Male, F = Female.
+- **Date_of_Collection**. The date on which the specimen was collected.
+- **Result**. Laboratory result value for this specimen.
 
-```{r save-rds}
-esr %>% 
-    write_rds(str_c("my_data_", today(), ".rds"))
-```
+## Data Exploration and Cleaning
 
-#### Disconnect
+The **narrative and code** of this section should, together, describe and accomplish the following:
+
+1. Convert **messy** data to **tidy**
+2. Check for **missing values**
+3. **Explore** and **fix** data in each column
+4. **Display** the cleaned data table
+
+### Convert messy data to tidy
+
+If any of following are not true for your data set, then you will have to tidy your data:
+
+* Each **variable** is in its own **column**
+* Each **case** is in its own **row**
+* Each **value** is in its own **cell**
+
+A tutorial for cleaning data can be found here: [Cleaning Data in R](https://www.datacamp.com/courses/cleaning-data-in-r)
+
+### Missing values
+
+The following code chunk shows columns that have missing data in the data frame `my_data`. 
 
 ```{r}
-dbDisconnect(con)
-```
-
-
-## Data Exploration and Clean-Up
-
-* Convert messy data to tidy
-    * Each variable in its own column
-    * Each case in its own row
-    * Each value in its own cell
-* Check for missing values
-* Then, go column by column and do the following:
-    * Verify (and if necessary, convert) data type
-        * Numeric variables should be integer or numeric
-        * Date-time variables should be Date or POSIXct
-        * Categorial variables should be factor
-        * All others should be character
-    * Visualize distribution
-        * Numeric variables: histogram
-        * Categorical variables: bar graph
-        * Character variables: inspect a small sample
-    * Comment on whether the data is as expected
-        * Range and shape of distribution
-        * Number and breakdown of categories
-        * Properties of character variables
-    * Explain and/or fix discrepancies
-
-### Sample Code
-
-#### Missing values
-
-```{r}
-esr %>%
+my_data %>%
     map_df(function(x) sum(is.na(x))) %>%
     gather(column, NAs)
 ```
 
-#### Numeric variables
+### Explore and fix data column-by-column
 
-`variable_1` is an **integer** column, which is appropriate.
+In this section, go column by column and do the following:
+
+* Verify (and if necessary, convert) data type
+    * **Numeric** variables should be **integer** (whole numbers) or **numeric** (fractions)
+    * **Date-time** variables should be **Date** (whole dates) or **POSIXct** (date/time stamps)
+    * **Categorial** variables should be **factor**
+    * All others, in general, should be **character**
+* Examine the distribution
+    * **Numeric** variables: **histogram**
+    * **Categorical** variables: **numerical summary**
+    * **Character** variables: inspect a small **sample**
+* Comment on whether the data is as expected
+    * Range and shape of distribution
+    * Number and breakdown of categories
+    * Properties of character variables
+* Explain discrepancies
+* Resolve data problems
+
+Below are a few examples of how various types of columns could be handled.
+
+#### A numeric column
+
+`Patient_Age` is an **integer** column, which is appropriate.
 
 ```{r}
 ggplot(data = my_data) + 
-    geom_histogram(mapping = aes(x = variable_1),
+    geom_histogram(mapping = aes(x = Patient_Age),
                    binwidth = 1)
 ```
 
-#### Factor variables
+The histogram shows ..., which is expected.
 
-`variable_2` is a **factor** column, which is appropriate.
+#### A character column
 
-```{r}
-ggplot(data = my_data) + 
-    geom_bar(mapping = aes(x = variable_2))
-```
-
-#### Character variables
-
-`variable_3` is a **character** column, which is approprite.
+`Patient_MRN` is a **character** column, which is appropriate.
 
 ```{r}
 set.seed(1)
 my_data %>%
     sample_n(10) %>%
-    pull(variable_3)
+    pull(Patient_MRN)
 ```
 
-#### Convert from character to factor
+A sample of data shows ..., which is expected.
 
-`variable_4` is a **character** column, but since it represents a categorial variable, convert it to a **factor**.
+#### A character column that should be a factor
+
+`Patient_Sex` is a **character** column, but since it represents a categorial variable, convert it to a **factor**.
 
 ```{r}
 my_data <- my_data %>%
-    mutate(variable_4 = as_factor(variable_4))
+    mutate(Patient_Sex = as_factor(Patient_Sex))
 ```
-
-#### Convert from character to integer
-
-`variable_5` is a **character** column, but since it represents a numeric variable, convert it to **integer**.
-
-Before doing so, examine any rows that do *not* contain an integer value:
 
 ```{r}
 my_data %>%
-    filter(is.na(as.integer(variable_5))) %>%
-    group_by(variable_5) %>%
+  pull(Patient_Sex) %>%
+  summary()
+```
+
+A numerical summary shows ..., which is expected.
+
+#### A character column that should be integer
+
+`Result` is a **character** column, but since it represents a numeric variable, convert it to **integer**.
+
+Before doing so, examine any rows that do **not** contain an integer value:
+
+```{r}
+my_data %>%
+    filter(is.na(as.integer(Result))) %>%
+    group_by(Result) %>%
     summarize(n = n()) %>% 
     arrange(desc(n))
 ```
 
-Now convert to integer and drop all rows in which `variable_5` had a non-numeric entry.
+Now convert to integer and drop all rows in which `Result` had a non-numeric entry.
 
 ```{r}
 my_data <- my_data %>%
-    mutate(variable_5 = as.integer(variable_5)) %>%
-    drop_na(variable_5)
+    mutate(Result = as.integer(Result)) %>%
+    drop_na(Result)
+```
+
+```{r}
+ggplot(data = my_data) + 
+    geom_histogram(mapping = aes(x = Result),
+                   binwidth = 1)
+```
+
+The histogram shows ..., which is expected.
+
+### Overview of the cleaned data
+
+The following code chunk creates an interactive table from the `my_data` data frame, which is useful for peer review and presentation purposes.
+
+```{r}
+my_data
 ```
 
 ## Visualization and Modeling
 
+This section should iterate through multiple cycles of: 
 
-## References
+1. Pose a **question** or state a **hypothesis**
+2. Create a **graph** or **statistical summary** to address #1
+3. **Comment** on new insights gained and new problems raised
+
+
+## Summary and Conclusions
 

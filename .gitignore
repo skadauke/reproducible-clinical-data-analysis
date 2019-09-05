@@ -1,0 +1,13 @@
+.DS_Store
+.Rhistory
+
+# Wait until after discussing with Dan and Amrom
+*.nb.html
+esr.csv
+
+# Ignore artifacts
+*.pdf
+.Rproj.user
+
+# Autosaved MS Office files
+\~\$*

@@ -3,184 +3,126 @@ title: "Getting Data"
 output: html_notebook
 ---
 
-## Your Turn #1: Importing a CSV file
+## Your Turn #2: Importing a CSV file
 
-If you have not yet done so, save the file "esr_data.csv" which you received by e-mail to the same place where this file is stored (e.g. on the Desktop).
+We have placed a file on the RStudio server that contains lab data for a specific test (ESR) generated here at Penn. The file is named "esr.csv" and you should be able to see it in your *Files* pane.
 
-To the following code chunk, add a line of code that accomplishes the following:
+Inside the code chunk below, add a line of code that accomplishes the following:
 
-1. Loads the CSV file "esr_data.csv"
-2. Stores the resulting data frame in an object named "esr" (without the quotes)
+  1. Loads the CSV file "esr.csv"
+  2. Stores the resulting data frame in an object named "esr" (without the quotes)
 
-(Hint: this is very similar to what's on the slide titled "read_csv()")
+Hint: this is very similar to what's on the slide titled "read_csv()"!
 
 ```{r}
 library("tidyverse")
 
-
 ```
 
-Remember that in order to run a code chunk, you need to click on the little green triangle at the upper right corner of the code chunk.
+Remember that in order to run a code chunk, you need to click on the little green triangle on the upper right corner of the chunk.
+
+Note: When you run the code chunk, you might see some R output that at first glance might look like an error, with red type stating "Parsed with column specification: ..." This is actually just a message from read_csv() telling you what it guessed the data types in the indicated columns are, e.g. AGE = col_double (numeric) or DRAWN_DT_TM = col_datetime (date-time stamp). 
+
 
 ### Viewing a data frame in RStudio
 
-One thing that Excel does well is to provide an interactive visual representation of the data, allowing you to sort and filter it. RStudio actually does this well, also.
+One thing that Excel does well is to provide an interactive visual representation of the data, allowing you inspect it by sorting and filtering. RStudio actually does this well, too, with one difference - it won't let you *change* any of the data while you inspect it.
 
-Look on the right at the *Environment* pane (you might have to click on the "Environment" tab) and find the entry *esr*. This is the data frame you just created. 
+Look on the right at the *Environment* pane (you might have to click on the "Environment" tab) and find the entry *esr*. This is the data frame you just created inside of R's memory. 
 
 On the far right in this row, you will spot a symbol that looks like a small table. Click on it to make the Table Viewer appear.
 
 *Pair up* with your group mates and answer the following questions:
 
-1. How many rows are in the data frame? How many columns?
+  1. How many rows are in the data frame? How many columns?
+  
+  2. What does each row represent? Each column?
 
-2. What do you think the column titled *CollAge* means?
+  3. Look at the two columns labeled *RESULT_VALUE_NUMERIC* and *ASCII_TEXT*. Can you figure out what the difference is between the two? 
 
-3. Go ahead and try to edit one of the values in this viewer. You will find that you can't. It would have been easy for the RStudio programmers to allow editing of specific values, but they decided not to add that feature. Why do you think this was designed that way?
+  4. Go ahead and try to edit one of the values in this viewer. You will find that you can't. It would have been easy for the RStudio programmers to allow editing of specific values, but they decided not to add that feature. Why do you think this was designed that way?
 
-4. Can you think if an easy way to confirm that all samples were collected in between *1-1-2017* and *12-31-2017*?
+  5. Can you think if an easy way to confirm that all samples were collected in between *05-18-2008* and *08-14-2018*?
 
-5. Can you figure out, without writing any R code, how many of the rows come from *male* patients?
-
-
-*Stop here*. We'll continue later in the session.
-
-*****************
+  6. Can you figure out, *without writing any R code*, how many of the rows come from *female* patients?
 
 
+*Stop here.* We will continue later.
 
-## You Turn #4: Connecting to the Datamart (macOS only currently)
-
-The goal of this exercise is to set your computer up for connecting to the MGH Utilization Management Datamart.
-
-At this time, you can connect your *personal macOS laptop* or a *Partners workstation* to the Datamart. I haven't (yet) been able to get this to work on non-Partners Windows PCs. Please follow the applicable section below.
-
-### macOS
-
-You can connect to the Datamart from a personal Macbook in two ways: connected to the Partners Wi-Fi or using a VPN (virtual private network). I'm assuming here that you're connected to Partners Wi-Fi.
-
-Make sure your computer is connected to *phswifi3*. You will not be able to connect to the Datamart from the guest Wi-Fi.
-
-Setting up database access requires a few steps, which I've tried to streamline here as much as possible, while not trying to shelter you from key technical aspects you should be aware of.
-
-The first step is to install *homebrew*. Homebrew is a package management system for macOS. Think of it as an alternative App Store that provides a lot of open-source software that works from the command line.
-
-To install homebrew, you need to enter some code in the *Terminal*. The Terminal is like the Console in that you enter one command at a time and it gets executed right away. It's different from the Console in that it accepts *system commands*, not R commands. RStudio has a Terminal built in - click on the *Terminal* tab in the lower left ("Console") pane. You should be greeted by a *prompt* that's something like:
-
-  mycomputer:~ myname$ 
-
-This prompt means that the Terminal is ready to accept a command. Copy the following command and paste it in the Terminal, then press enter. Follow the prompts and enter your system password when asked.
+***************
 
 
-  /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 
+## Your Turn #4: Databases
 
-The next step will be to install *FreeTDS*, a driver to connect to Microsoft SQL servers. Copy the following code, paste it in the Terminal, and hit enter.
+### Browsing a Database
 
+To connect to the database containing ESR values, find the *Connections* tab on the top right pane and click *New Connection*. From there, select *LABS* and click OK. You have now connected to the a *Database Management System* with real patient lab data that we've set up for this course. (So don't worry, you're not going to be able to break anything important!)
 
-  brew install freetds --with-unixodbc
+You should now see two *Databases*, one of which is titled *public*. Click on the blue circle with the white triangle to see the *Database Tables*. Only one table should appear - *RESULTS*.
 
+Click on the blue circle with the white triangle next to *RESULTS*. This reveals all the columns (or variables) in the table. Some of the column names are obvious, such as *HUP_MRN* while others are more cryptic. 
 
-We also need to create two configuration files to tell FreeTDS (and hence, R/RStudio) how to access the Datamart. These files, named *.odbcinst.ini* and *.odbc.ini*, need to be stored in your home directory. 
-
-Run the following code chunk (by clicking the green triangle on the top right) to create these files automatically.
-
-```{r}
-writeLines(
-    c(
-        "[FreeTDS]",
-        "Description = TD Driver (MSSQL)",
-        "Driver = /usr/local/lib/libtdsodbc.so",
-        "Setup = /usr/local/lib/libtdsodbc.so",
-        "FileUsage = 1"),
-    con = "~/.odbcinst.ini"
-)
-
-writeLines(
-    c(
-        "[PHSSQL2057]",
-        "Driver = FreeTDS",
-        "Server = PHSSQL2057.partners.org",
-        "Port = 1433",
-        "Database = MGHLABUTIL"),
-    con = "~/.odbc.ini"
-)
-```
-
-This concludes the macOS-specific configuration. Skip ahead to the section *Finish installation*.
-
-
-### Partners Workstation
-
-Click on the *Windows* button and type "odbc" in the search field. The entry *Data Sources (ODBC)* should appear. Click on it to run the program.
-
-Click *Add...* and select *SQL Server* all the way on the bottom of the list. Click *Finish*.
-
-In the next window, enter "PHSSQL2057" in both the *Name:* and the *Server:* fields. Click *Next*, *Next*, *Next*, and *Finish*. Then click on *Test Data Source...*. If everything worked, you should see the message "TESTS COMPLETED SUCCESSFULLY!" Click *OK* on each window.
-
-This concludes the Windows-specific configuration. Continue with the section *Finish installation*.
-
-
-### Finish installation
-
-Install the *odbc* package to enable R and RStudio to connect to databases via *FreeTDS*. Run the following code chunk:
-
-```{r}
-install.packages("odbc")
-```
-
-That's it! Your computer should now be set up for connecting to the Datamart. So let's try it out!
-
-
-### Connect to the Datamart
-
-The following code will ask you for your Partners username and password and establish a connection to the Datamart. If successful, the *Connections* tab will appear in the upper right ("Environment") pane.
-
-```{r}
-library("odbc")
-library("tidyverse")  # for str_c
-
-username <- function() {
-    .rs.api.showPrompt(title = "Username", 
-                       message = "Please enter your Partners User Name")
-}
-
-password <- function() {
-    .rs.api.askForPassword(prompt = "Please enter your Partners Password")
-}
-
-con <- dbConnect(odbc(),
-                 dsn = "PHSSQL2057",
-                 uid = str_c("PARTNERS\\", username()),
-                 pwd = password())
-```
-
-
-### Browsing a database
-
-Find the database with the name *MGHLABUTIL* in the *Connections* pane and click on the blue cirle with the white triangle inside it. This opens up another level in this view, one of which is *dbo* which stands for *database objects*. These are the database *tables* that live inside the MGHLABUTIL database.
-
-There are quite a few tables in the MGHLABUTIL database, but the one we use most often is named *MGHLABUTIL_LabResults*. This database table contains one row for each lab result logged in MGH's Lab Information System (SunQuest) since 2013.
-
-Click on the blue circle with the white triangle next to *MGHLABUTIL_LabResults*. This reveals all the columns (or variables) in the table. There are 71 of them!
-
-On the far right in this row, you will spot a symbol that looks like a small table, just like the one you saw ealier next to *esr*. Click on it to preview the database table.
+On the far right next to *RESULTS*, you will spot a symbol that looks like a small table, just like the one you saw ealier next to the *esr* data frame. Click on it to *preview* the database table. This will query a number of rows from the database server and display it in RStudio.
 
 *Pair up* with your group mates and answer the following questions:
 
-1. How many rows did RStudio retrieve? Why do you think RStudio only pulled a small subset of all the rows in MGHLABUTIL_LabResults?
+  1. How many rows did RStudio retrieve from the database? Why do you think RStudio only pulled a small subset of all the the rows in *RESULTS*?
 
-2. Suppose you're interested in creating a graph that shows the results of all ESR values from 2017 versus patient age, patient sex. Without looking at the specific column names or data in MGHLABUTIL_Results, what information do you think you will need?
+  2. Suppose you want to create a graph that shows the results of all ESR values from 2017 versus patient age and patient sex. The graph should be a scatterplot in which each data point is a specific lab result. Without looking at the specific column names in *RESULTS*, what information do you think you will need?
 
-3. Try to identify the specific columns in MGHLABUTIL_LabResults that contain this information from question 2.
+  3. Try to identify the specific columns in *RESULTS* that contain this information from question 2.
 
-4. Even though the patient name and MRN are not going to be necessary for creating the graph, why might it be a good idea to pull this information as well?
+  4. Even though the patient name and MRN are not going to be necessary for creating the graph, why might it be a good idea to pull this information as well?
+
+  5. Once you are done browsing, please *disconnect* by clicking the button that looks like a pipe with a little red X on it.
+  
 
 
-### Disconnect
+### Connecting to a Database with Code
 
-Once you are done browsing, disconnect from the Datamart by running the following code chunk:
+The most versatile method to connect to databases with R involves the `odbc` package. ODBC stands for "Open Database Connectivity" and is a widely used standard to connect to databases. Almost every database management system comes with an ODBC driver, and therefore R can connect to almost every type of database.
+
+Before you can import data from a database table into R with `odbc`, you need to complete two steps:
+
+1. Create a *database connection object* that links to the database
+2. Create a *tbl object* that links to a specific database table
+
+The tbl object can be thought of as a virtual dataframe - it can be used in lieu of an actual dataframe that exists in R's memory, but it's really just a reference to the database table. When you print out values from a tbl object, as we will do below, what happens inside of R is that R sends a database query to the database to obtain the desired data.
+
+
+The following code chunk opens a database connection to the *LABS* database and creates a database connection object named `labs_con`. 
 
 ```{r}
-dbDisconnect(con)
+library(odbc)
+labs_con <- dbConnect(odbc(), "LABS")
+```
+
+
+
+After running this code chunk, you will notice that a new object shows up in the Environment, named `labs_con`, with the data type "Formal class PostgreSQL". If you click on the blue triangle to expand it, you will see information about the connection. For example, that the username of the connection is "postgres" and the server name "localhost". 
+
+How does R know these details about the *LABS* database? The database connection details are stored in a configuraton file called "odbc.ini" in a folder called "/etc" (the standard Linux folder for system configuration files). Try to find the file and open it. If you get stuck, ask for help!
+
+Take a look at the contents of the "odbc.ini" file. *Pair up and discuss* - do the contents make sense to you? Why might it be a good idea to store the connection details in a separate file from your R Markdown document?
+
+
+Now that our database connection is set up, the next code chunk creates a tbl object named `results_tbl` that links to the *RESULTS* database table.
+
+```{r}
+results_tbl <- tbl(labs_con, "RESULTS")
+```
+
+
+We can look at the first 1,000 rows of the database table by simply writing:
+
+```{r}
+results_tbl
+```
+
+
+Please disconnect from the database when you're done. (This has the same effect as clicking the button in the Connections pane that looks like a pipe with a little red X on it.)
+
+```{r}
+dbDisconnect(labs_con)
 ```
